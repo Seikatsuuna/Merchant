@@ -1,0 +1,20 @@
+{
+  "name": "merchant",
+  "version": "1.0.0",
+  "description": "Funny Discord D&D lookup bot",
+  "main": "index.js",
+  "scripts": {
+    "test": "npm run",
+    "deploy-commands": "node deploy-commands.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://gitgud.io/Seikatsu/Merchant"
+  },
+  "author": "Seikatsu",
+  "license": "MIT",
+  "dependencies": {
+    "discord.js": "^14.7.1",
+    "request": "^2.88.2"
+  }
+}
