@@ -158,13 +158,52 @@ module.exports = {
                 {name: "Casting Time", value: castTimeText, inline: true},
                 {name: "Range", value: rangeText, inline: true},
                 {name: "Components", value: componentsText, inline: true},
-                {name: "Duration", value: durationText, inline: true},
+                {name: "Duration", value: durationText},
             )
             .setFooter({ text: `${spell.source} - Page ${spell.page}`})
 
             // spell description embedding..... this is a minor nightmare and requires more than my 5 minutes of allotted productivity for a week so slapping a fat TODO on this for now
-            
-            
+            let descriptionEntries = []
+            spell.entries.forEach(entry => {
+                if(entry.type) {
+                    if(entry.type === "entries") {
+                        descriptionEntries.push(`**${entry.name}**\n${entry.entries.join("\n")}`)
+                    }
+                    // TODO: tables; check for other weird entry types
+                } else {
+                    descriptionEntries.push(entry)
+                }
+            })
+
+            let description = descriptionEntries.join("\n\n")
+            let descriptionFields = []
+            // handle descriptions over 1024 chars into multiple fields, could be polished a bit but it works??? may have to update if spells break 6k chars
+            if(description.length > 1024) {
+                // this is a roundabout way to make sure lines don't get cut off by field limits
+                let stop = 1024
+                if(description.substring(1019, 1024) !== "\n\n") {
+                    stop = description.substring(0, 1024).lastIndexOf("\n\n")
+                }
+                let leftoverText = description.substring(stop, description.length);
+                descriptionFields.push({name: "Description", value: description.substring(0, stop)})
+                while(leftoverText.length > 0) {
+                    if(leftoverText.length > 1024) {
+                        let stop = 1024
+                        if(leftoverText.substring(1019, 1024) !== "\n\n") {
+                            stop = leftoverText.substring(0, 1024).lastIndexOf("\n\n")
+                        }
+                        descriptionFields.push({name: "\u200b", value: leftoverText.substring(0, stop)})
+                        leftoverText = leftoverText.substring(stop, leftoverText.length)
+                    } else {
+                        descriptionFields.push({name: "\u200b", value: leftoverText})
+                        leftoverText = ""
+                    }
+                }
+            } else {
+                descriptionFields.push({name: "Description", value: description})
+            }
+            embed.addFields(descriptionFields)
+
             // edit the initial reply with our new fancy embed
             return interaction.editReply({content: "", embeds: [embed]})
         }
