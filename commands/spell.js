@@ -18,6 +18,16 @@ const resources =
 ];
 let fetchSettings = {json: true};
 
+// kanged; I wish languages had this by default lmao
+function toTitleCase(str) {
+    return str.replace(
+      /\w\S*/g,
+      function(txt) {
+        return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+      }
+    );
+  }
+
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('spell')
@@ -33,12 +43,12 @@ module.exports = {
 			.setName('show')
 			.setDescription("Should I post this one publically?")
 		),
-	execute(interaction) {
+	async execute(interaction) {
         let hidden = true;
         if(interaction.options.getBoolean('show')) hidden = false;
 
         // this avoids some niche situations where the interaction would get two replies... fucky but it technically works is becoming my motto
-        interaction.reply({content: "Searching...", ephemeral: hidden})
+        await interaction.reply({content: "Searching...", ephemeral: hidden})
 
         // FORMATTING & EMBED
         function embedSpell(spell) {
@@ -81,9 +91,81 @@ module.exports = {
                 break;
             }
             
+            // check classes/class variants if they exist to be passed into embed
+            let classes = spell.classes.fromClassList;
+            if(spell.classes.fromClassListVariant) {
+                for(i in spell.classes.fromClassListVariant) {
+                    // this ensures that classes aren't repeated while checking for variants
+                    if(!classes.map(a => a.name).includes(spell.classes.fromClassListVariant[i].name)) {
+                        classes.push(i)
+                    }
+                }
+            }
+
+            // checks if cantrip to replace level text, since "level 0" looks kinda shit
+            let levelText = "Level " + spell.level;
+            if(spell.level == 0) {
+                levelText = "Cantrip"
+            }
+
+            //check for range/determine how to display it
+            let rangeText = toTitleCase(spell.range.distance.type);
+            if(spell.range.distance.amount) {
+                rangeText = `${spell.range.distance.amount} ${spell.range.distance.type}`
+            }
+
+            // check if spell is an action/BA; make it look prettier if so
+            let castTimeText = `${spell.time[0].number} ${spell.time[0].unit}`
+            if(spell.time[0].unit === "action") {
+                castTimeText = "Action"
+            } else if (spell.time[0].unit === "bonus") {
+                castTimeText = "Bonus action"
+            }
+
+            // really scuffed way of deciding how to display components; there's probably a way more competent way to go about this so thanks in advance for fixing it future me
+            let components = []
+            if(spell.components.v) {
+                components.push("V")
+            }
+            if(spell.components.s) {
+                components.push("S")
+            }
+            // some niche spells have material components in an object??? just default to the text
+            if(spell.components.m) {
+                if(spell.components.m.text) {
+                    components.push(`M (${spell.components.m.text})`)
+                } else {
+                    components.push(`M (${spell.components.m})`)
+                }
+
+            }
+            let componentsText = components.join(", ")
+
+            // figure out how to display the duration, make it look not shit if instantaneous
+            let durationText = spell.duration[0].type
+            if(durationText === "instant") {
+                durationText = "Instantaneous"
+            } else if (durationText === "timed") {
+                durationText = `${spell.duration[0].duration.amount} ${spell.duration[0].duration.type}`
+            }
+
+            // generate and send embed
             const embed = new EmbedBuilder()
             .setTitle(spell.name)
+            .setDescription(`*${levelText} ${school} (${classes.map(a => a.name).join(', ')})*`)
             .setColor(color)
+            .addFields(
+                {name: "Casting Time", value: castTimeText, inline: true},
+                {name: "Range", value: rangeText, inline: true},
+                {name: "Components", value: componentsText, inline: true},
+                {name: "Duration", value: durationText, inline: true},
+            )
+            .setFooter({ text: `${spell.source} - Page ${spell.page}`})
+
+            // spell description embedding..... this is a minor nightmare and requires more than my 5 minutes of allotted productivity for a week so slapping a fat TODO on this for now
+            
+            
+            // edit the initial reply with our new fancy embed
             return interaction.editReply({content: "", embeds: [embed]})
         }
 
