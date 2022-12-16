@@ -1,5 +1,5 @@
 {
     "token": "bot-token-here",
     "clientId": "app-id",
-	"guildId": "testing-guild-lol"
+    "guildId": "testing-guild-lol"
 }
