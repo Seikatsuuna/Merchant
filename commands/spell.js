@@ -220,7 +220,19 @@ module.exports = {
             }
 
             let description = descriptionEntries.join("\n\n")
-            // TODO: handle formatting (ex {@filter beast of challenge 2 or lower|I|hate|sting|filtering})
+            // handle some weird formatting, searches for items in {@X}
+            let findFormat = /{@.*}/gi
+            let replaceFormat = /(?<=\{@.*\s)(.*?)((?=\s*\|)|(?=\s*\}))/gi
+            
+            // this is scuffed, and a perfect example of why I don't use regex
+            let formatArray = description.match(findFormat)
+            if(formatArray !== null) {
+                for(i in formatArray) {
+                    let replaceStringButAnArrayBecauseRegexIsTheFuckingWorst = replaceFormat.exec(description)
+                    description = description.replace(formatArray[i], replaceStringButAnArrayBecauseRegexIsTheFuckingWorst[0])
+                }
+            }
+
             let descriptionFields = []
             // handle descriptions over 1024 chars into multiple fields, could be polished a bit but it works??? may have to update if spells break 6k chars
             if(description.length > 1024) {
