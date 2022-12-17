@@ -26,7 +26,7 @@ function toTitleCase(str) {
         return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
       }
     );
-  }
+}
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -169,13 +169,58 @@ module.exports = {
                     if(entry.type === "entries") {
                         descriptionEntries.push(`**${entry.name}**\n${entry.entries.join("\n")}`)
                     }
-                    // TODO: tables; check for other weird entry types
+                    else if(entry.type === "list") {
+                        formattedList = []
+                        // kinda shitcode, I promise my usage of forEach is for a genuine reason and not burnout induced laziness that I will hate later
+                        entry.items.forEach(item => {
+                            formattedList.push(`\u2022 ${item}`)
+                        })
+                        descriptionEntries.push(`${formattedList.join("\n")}`)
+                    }
+                    else if(entry.type === "table") {
+                        // temp shitcode, need to brainstorm a way to space things nicely
+                        let table = entry.colLabels.join(" | ")
+                        entry.rows.forEach(row => {
+                            table = `${table}\n${row.join(" | ")}`
+                        })
+                        descriptionEntries.push(`\`\`\`\n${table}\n\`\`\``)
+                    }
                 } else {
                     descriptionEntries.push(entry)
                 }
             })
 
+            // yes I did copy/paste the code from above while checking for higher levels, cry about it
+            if(spell.entriesHigherLevel) {
+                spell.entriesHigherLevel.forEach(entry => {
+                    if(entry.type) {
+                        if(entry.type === "entries") {
+                            descriptionEntries.push(`**${entry.name}**\n${entry.entries.join("\n")}`)
+                        }
+                        else if(entry.type === "list") {
+                            formattedList = []
+                            // kinda shitcode, I promise my usage of forEach is for a genuine reason and not burnout induced laziness that I will hate later
+                            entry.items.forEach(item => {
+                                formattedList.push(`\u2022 ${item}`)
+                            })
+                            descriptionEntries.push(`${formattedList.join("\n")}`)
+                        }
+                        else if(entry.type === "table") {
+                            // temp shitcode, need to brainstorm a way to space things nicely
+                            let table = entry.colLabels.join(" | ")
+                            entry.rows.forEach(row => {
+                                table = `${table}\n${row.join(" | ")}`
+                            })
+                            descriptionEntries.push(`\`\`\`\n${table}\n\`\`\``)
+                        }
+                    } else {
+                        descriptionEntries.push(entry)
+                    }
+                })
+            }
+
             let description = descriptionEntries.join("\n\n")
+            // TODO: handle formatting (ex {@filter beast of challenge 2 or lower|I|hate|sting|filtering})
             let descriptionFields = []
             // handle descriptions over 1024 chars into multiple fields, could be polished a bit but it works??? may have to update if spells break 6k chars
             if(description.length > 1024) {
