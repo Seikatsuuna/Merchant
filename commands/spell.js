@@ -1,7 +1,10 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const request = require('request');
+const fs = require('fs');
+const path = require('path')
+const homebrewResources = fs.readdirSync('./homebrew').filter(file => path.extname(file) === '.json');
 // probably a better way of doing this, especially since I already have request
-const resources = 
+let resources = 
 [
     "https://raw.githubusercontent.com/5etools-mirror-1/5etools-mirror-1.github.io/master/data/spells/spells-aag.json",
     "https://raw.githubusercontent.com/5etools-mirror-1/5etools-mirror-1.github.io/master/data/spells/spells-ai.json",
@@ -16,6 +19,7 @@ const resources =
     "https://raw.githubusercontent.com/5etools-mirror-1/5etools-mirror-1.github.io/master/data/spells/spells-aitfr-avt.json",
     "https://raw.githubusercontent.com/5etools-mirror-1/5etools-mirror-1.github.io/master/data/spells/spells-phb.json"
 ];
+
 let fetchSettings = {json: true};
 
 // kanged; I wish languages had this by default lmao
@@ -145,6 +149,8 @@ module.exports = {
             let durationText = spell.duration[0].type
             if(durationText === "instant") {
                 durationText = "Instantaneous"
+            } else if (durationText === "timed" && spell.duration[0].concentration) {
+                durationText = `Concentration, up to ${spell.duration[0].duration.amount} ${spell.duration[0].duration.type}`
             } else if (durationText === "timed") {
                 durationText = `${spell.duration[0].duration.amount} ${spell.duration[0].duration.type}`
             }
@@ -160,7 +166,13 @@ module.exports = {
                 {name: "Components", value: componentsText, inline: true},
                 {name: "Duration", value: durationText},
             )
-            .setFooter({ text: `${spell.source} - Page ${spell.page}`})
+            
+            // check for page number, avoid displaying "page 0"
+            if(spell.page > 0){
+                embed.setFooter({ text: `${spell.source} - Page ${spell.page}`})
+            } else {
+                embed.setFooter({ text: `${spell.source}`})
+            }
 
             // spell description embedding..... this is a minor nightmare and requires more than my 5 minutes of allotted productivity for a week so slapping a fat TODO on this for now
             let descriptionEntries = []
@@ -206,7 +218,7 @@ module.exports = {
                             descriptionEntries.push(`${formattedList.join("\n")}`)
                         }
                         else if(entry.type === "table") {
-                            // temp shitcode, need to brainstorm a way to space things nicely
+                            // temp shitcode, TODO: brainstorm a way to space things nicely
                             let table = entry.colLabels.join(" | ")
                             entry.rows.forEach(row => {
                                 table = `${table}\n${row.join(" | ")}`
@@ -269,8 +281,32 @@ module.exports = {
         let posSpells = []
         let search = interaction.options.getString('query').toLowerCase()
         // this is worse, nevermind :(
-        let resourceAmount = resources.length;
+        let resourceAmount = resources.length + homebrewResources.length;
         let currentResource = 0;
+
+        //I know this looks bad but.... it ensures homebrew sources are searched first to prioritize overwrites of RAW spells
+        homebrewResources.forEach(file => {
+            const fileData = fs.readFileSync(path.join('./homebrew', file));
+            const json = JSON.parse(fileData.toString());
+            if(json.spell) {
+                let spells = json.spell
+                for(i in spells) {
+                    // if a perfect match is found, stop searching
+                    if(spells[i].name.toLowerCase() === search) {
+                        return embedSpell(spells[i]);
+                    }
+                    // otherwise, add any partial matches to posSpells
+                    if(spells[i].name.toLowerCase().includes(search)) {
+                        posSpells.push(spells[i]);
+                    }
+                }
+                currentResource++;
+                if(currentResource == resourceAmount) {
+                    getResults();
+                }
+            }
+        });
+
         // this might be top tier shitcode, iterate through each JSON to search
         Promise.all(resources.map(async (resourceUrl) => {
                 request(resourceUrl, fetchSettings, (error, res, body) => {
