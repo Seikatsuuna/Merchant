@@ -1,9 +1,12 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const request = require('request');
+// for funny table shenanigans
+const { AsciiTable3 } = require('ascii-table3');
+// grabs all JSONs in homebrew folder and passes into an array for later nefarious uses
 const fs = require('fs');
 const path = require('path')
 const homebrewResources = fs.readdirSync('./homebrew').filter(file => path.extname(file) === '.json');
-// probably a better way of doing this, especially since I already have request
+// grabs all default resource JSONs; probably a better way of doing this, especially since I already have request
 let resources = 
 [
     "https://raw.githubusercontent.com/5etools-mirror-1/5etools-mirror-1.github.io/master/data/spells/spells-aag.json",
@@ -188,14 +191,25 @@ module.exports = {
                             formattedList.push(`\u2022 ${item}`)
                         })
                         descriptionEntries.push(`${formattedList.join("\n")}`)
-                    }
+                    } 
                     else if(entry.type === "table") {
-                        // temp shitcode, need to brainstorm a way to space things nicely
-                        let table = entry.colLabels.join(" | ")
-                        entry.rows.forEach(row => {
-                            table = `${table}\n${row.join(" | ")}`
-                        })
-                        descriptionEntries.push(`\`\`\`\n${table}\n\`\`\``)
+                        let table = new AsciiTable3()
+                        .setHeading(entry.colLabels[0])
+                        .setStyle('none')
+                        .setCellMargin(0)
+                        .setHeadingAlignLeft()
+                        
+                        for(i in entry.rows) {
+                            table.addRowMatrix([entry.rows[i]])
+                        }
+                        
+                        // this is disgusting, I know, but this godawful library will only display headers correctly if I do this, otherwise it makes a nested array and displays as one string
+                        for(i in entry.colLabels) {
+                            if(i > 0) {
+                                table.setHeading(...table.getHeading(), entry.colLabels[i])
+                            }
+                        }
+                        descriptionEntries.push(`\`\`\`\n${table.toString()}\n\`\`\``)
                     }
                 } else {
                     descriptionEntries.push(entry)
@@ -218,12 +232,23 @@ module.exports = {
                             descriptionEntries.push(`${formattedList.join("\n")}`)
                         }
                         else if(entry.type === "table") {
-                            // temp shitcode, TODO: brainstorm a way to space things nicely
-                            let table = entry.colLabels.join(" | ")
-                            entry.rows.forEach(row => {
-                                table = `${table}\n${row.join(" | ")}`
-                            })
-                            descriptionEntries.push(`\`\`\`\n${table}\n\`\`\``)
+                            let table = new AsciiTable3()
+                            .setHeading(entry.colLabels[0])
+                            .setStyle('none')
+                            .setCellMargin(0)
+                            .setHeadingAlignLeft()
+                            
+                            for(i in entry.rows) {
+                                table.addRowMatrix([entry.rows[i]])
+                            }
+                            
+                            // this is disgusting, I know, but this godawful library will only display headers correctly if I do this, otherwise it makes a nested array and displays as one string
+                            for(i in entry.colLabels) {
+                                if(i > 0) {
+                                    table.setHeading(...table.getHeading(), entry.colLabels[i])
+                                }
+                            }
+                            descriptionEntries.push(`\`\`\`\n${table.toString()}\n\`\`\``)
                         }
                     } else {
                         descriptionEntries.push(entry)
