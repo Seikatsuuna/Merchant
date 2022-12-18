@@ -221,7 +221,7 @@ module.exports = {
 
             let description = descriptionEntries.join("\n\n")
             // handle some weird formatting, searches for items in {@X}
-            let findFormat = /{@.*}/gi
+            let findFormat = /{@.[^\}]*}/gi
             let replaceFormat = /(?<=\{@.*\s)(.*?)((?=\s*\|)|(?=\s*\}))/gi
             
             // this is scuffed, and a perfect example of why I don't use regex
