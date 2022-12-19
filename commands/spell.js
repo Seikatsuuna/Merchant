@@ -38,7 +38,7 @@ function toTitleCase(str) {
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('spell')
-		.setDescription('For the love of god do not fucking use this')
+		.setDescription('Get a description of a spell')
         .addStringOption((option) =>
 			option
 			.setName('query')
