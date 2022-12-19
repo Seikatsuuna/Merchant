@@ -200,6 +200,16 @@ module.exports = {
                         .setHeadingAlignLeft()
                         
                         for(i in entry.rows) {
+                            // more weird format filtering, some table entries in xge are objects
+                            let tableRows = entry.rows[i]
+                            for(x in tableRows) {
+                                // this is a little shit but leaves room to check for different types
+                                if(tableRows[x].type) {
+                                    if(tableRows[x].type === "cell") {
+                                        tableRows[x] = tableRows[x].roll.min + "-" + tableRows[x].roll.max
+                                    }
+                                }
+                            }
                             table.addRowMatrix([entry.rows[i]])
                         }
                         
